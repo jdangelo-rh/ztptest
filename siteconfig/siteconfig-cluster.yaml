@@ -1,0 +1,946 @@
+apiVersion: ran.openshift.io/v1
+kind: SiteConfig
+metadata:
+  name: "prodbm"
+  namespace: "prodbm"
+spec:
+  baseDomain: "telcelcloud.dt"
+  pullSecretRef:
+    name: "assisted-deployment-pull-secret"
+  clusterImageSetNameRef: "img4.14.15-multi-appsub"
+  sshPublicKey: "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQC/Y2wxSXMCIcsVRv1a7U8UadTGi3vqrk4mkpYpCMiurECqTN13Q/EthTsrptH51i6HIlqPh8p8/dQQomIoNCnm2sXIa+9Drbso5RbCVhulGc3u7/QnLcZ34QrCKpXxQn/WjR+xBS2QJKMzgrEbv8tHO/sAgDKsqX9fYoWBOyNkarlGx31JNUvXnQtigqZ9TVFeKgcLz4rzxJ+Ykf+SC+EHSipnn+C9JHEj61nZufX8hUsD36LON5vWFmvxv2nxK47hhFuZLin4UaGi5gEzuJL3QXbuLT73lhkwlMNp6Sl4oRuyrj/UEt2IvQUM4VxW0kRx3aTqAldkvdzrYQ69UqPkfYJg7ZbGEFYv1zrDS69MMeK25drXfrIp2cuwWNvvacGkXWt+h1ptPOTZHPqSztJT9CEEw+zkF16NiPQeEZfJi8fph6oEHDTOhO5jFHy0Wx/o1IxTJf/15Gv5wi19be5DgrpqhH0t0ndp2nAdaJlzrmfjXsBuIaxs6og24O8FvlU= root@ithvhposcprbas01"
+  clusters:
+  - clusterName: "prodbm"
+    networkType: "OVNKubernetes"
+    holdInstallation: false
+    clusterLabels:
+      cluster: "prodbm"
+    clusterNetwork:
+      - cidr: 10.128.0.0/14
+        hostPrefix: 23
+    # For 3-node and standard clusters with static IPs, the API and Ingress IPs must be configured here
+    apiVIP: 10.119.57.30
+    apiVIPs:
+      - 10.119.57.30
+    ingressVIP:  10.119.57.31
+    ingressVIPs:
+      - 10.119.57.31
+    serviceNetwork:
+      - 172.30.0.0/16
+    additionalNTPSources:
+      - 10.208.27.150
+      - 10.192.7.70
+    # - 1111:2222:3333:4444::2
+    # Optionally; This can be used to override the KlusterletAddonConfig that is created for this cluster:
+    #crTemplates:
+    #  KlusterletAddonConfig: "KlusterletAddonConfigOverride.yaml"
+    # Optionally; This can be used to to configure desired BIOS setting on all nodes in this cluster:
+    #biosConfigRef:
+    #  filePath: "example-hw.profile"
+################################################################
+    nodes:
+      - hostName: "ithfdeocp1lmt01.telcelcloud.dt"
+        role: "master"
+        bmcAddress: "idrac-virtualmedia+https://10.59.198.224/redfish/v1/Systems/System.Embedded.1"
+        bmcCredentialsName:
+          name: "bmh-secret-master1"
+        bootMACAddress: "00:62:0b:9b:8d:61"
+        bootMode: "UEFISecureBoot"  
+        # Use UEFISecureBoot to enable secure boot for this node
+        # bootMode: "UEFI"
+        nodeLabels:
+          cluster.ocs.openshift.io/openshift-storage: "true"
+        rootDeviceHints:
+          deviceName: "/dev/sda"
+# As per: https://docs.openshift.com/container-platform/4.11/scalability_and_performance/cnf-talm-for-cluster-upgrades.html#cnf-about-topology-aware-lifecycle-manager-config_cnf-topology-aware-lifecycle-manager
+        #diskPartition:
+        #  - device: /dev/sda
+        #    partitions:
+        #    - mount_point: /var/recovery
+        #      size: 51200
+        #      start: 800000
+        nodeNetwork:
+          interfaces:
+            - name: "ens4f0np0"
+              macAddress: "14:23:f2:1e:7f:70"
+            - name: "ens5f0np0"
+              macAddress: "14:23:f2:1f:85:70"
+          config:
+            interfaces:
+              - name: bond0
+                type: bond
+                state: up
+                mtu: 9000
+                ipv4:
+                  enabled: false
+                link-aggregation:
+                  mode: 802.3ad
+                  options:
+                    miimon: '100'
+                  port:
+                  - ens4f0np0
+                  - ens5f0np0
+              - name: bond0.2844
+                type: vlan
+                state: up
+                mtu: 9000
+                ipv4:
+                  enabled: true
+                  address:
+                    - ip: 10.119.57.6
+                      prefix-length: 24
+                vlan:
+                  base-iface: bond0 
+                  id: 2844
+            dns-resolver:
+              config:
+                server:
+                  - 10.207.52.57
+                  - 10.119.248.13
+            routes:
+              config:
+                - destination: 0.0.0.0/0
+                  next-hop-address: 10.119.57.1
+                  next-hop-interface: bond0.2284
+############################################################
+      - hostName: "ithfdeocp1lmt02.telcelcloud.dt"
+        role: "master"
+        bmcAddress: "idrac-virtualmedia+https://10.59.198.225/redfish/v1/Systems/System.Embedded.1"
+        bmcCredentialsName:
+          name: "bmh-secret-master2"
+        bootMACAddress: "00:62:0b:9c:03:9f"
+        bootMode: "UEFISecureBoot"  
+        # Use UEFISecureBoot to enable secure boot for this node
+        # bootMode: "UEFI"
+        nodeLabels:
+          cluster.ocs.openshift.io/openshift-storage: "true"
+        rootDeviceHints:
+          deviceName: "/dev/sda"
+# As per: https://docs.openshift.com/container-platform/4.11/scalability_and_performance/cnf-talm-for-cluster-upgrades.html#cnf-about-topology-aware-lifecycle-manager-config_cnf-topology-aware-lifecycle-manager
+        #diskPartition:
+        #  - device: /dev/sda
+        #    partitions:
+        #    - mount_point: /var/recovery
+        #      size: 51200
+        #      start: 800000
+        nodeNetwork:
+          nodeNetwork:
+          interfaces:
+            - name: "ens4f0np0"
+              macAddress: "14:23:f2:1e:a1:40"
+            - name: "ens5f0np0"
+              macAddress: "14:23:f2:1f:85:00"
+          config:
+            interfaces:
+              - name: bond0
+                type: bond
+                state: up
+                mtu: 9000
+                ipv4:
+                  enabled: false
+                link-aggregation:
+                  mode: 802.3ad
+                  options:
+                    miimon: '100'
+                  port:
+                  - ens4f0np0
+                  - ens5f0np0
+              - name: bond0.2844
+                type: vlan
+                state: up
+                mtu: 9000
+                ipv4:
+                  enabled: true
+                  address:
+                    - ip: 10.119.57.7
+                      prefix-length: 24
+                vlan:
+                  base-iface: bond0
+                  id: 2844
+            dns-resolver:
+              config:
+                server:
+                  - 10.207.52.57
+                  - 10.119.248.13
+            routes:
+              config:
+                - destination: 0.0.0.0/0
+                  next-hop-address: 10.119.57.1
+                  next-hop-interface: bond0.2284
+############################################################
+      - hostName: "ithfdeocp1lmt03.telcelcloud.dt"
+        role: "master"
+        bmcAddress: "idrac-virtualmedia+https://10.59.198.226/redfish/v1/Systems/System.Embedded.1"
+        bmcCredentialsName:
+          name: "bmh-secret-master3"
+        bootMACAddress: "00:62:0b:9c:1e:1b"
+        bootMode: "UEFISecureBoot"  
+        nodeLabels:
+          cluster.ocs.openshift.io/openshift-storage: "true"
+        rootDeviceHints:
+          deviceName: "/dev/sda"
+        nodeNetwork:
+          interfaces:
+            - name: "ens4f0np0"
+              macAddress: "14:23:f2:1f:72:10"
+            - name: "ens5f0np0"
+              macAddress: "14:23:f2:1f:82:20"
+          config:
+            interfaces:
+              - name: bond0
+                type: bond
+                state: up
+                mtu: 9000
+                ipv4:
+                  enabled: false
+                link-aggregation:
+                  mode: 802.3ad
+                  options:
+                    miimon: '100'
+                  port:
+                  - ens4f0np0
+                  - ens5f0np0
+              - name: bond0.2844
+                type: vlan
+                state: up
+                mtu: 9000
+                ipv4:
+                  enabled: true
+                  address:
+                    - ip: 10.119.57.8
+                      prefix-length: 24
+                vlan:
+                  base-iface: bond0
+                  id: 2844
+            dns-resolver:
+              config:
+                server:
+                  - 10.207.52.57
+                  - 10.119.248.13
+            routes:
+              config:
+                - destination: 0.0.0.0/0
+                  next-hop-address: 10.119.57.1
+                  next-hop-interface: bond0.2284
+      - hostName: "ithfdeocp1lwr01.telcelcloud.dt"
+        role: "worker"
+        bmcAddress: "idrac-virtualmedia+https://10.59.198.227/redfish/v1/Systems/System.Embedded.1"
+        bmcCredentialsName:
+          name: "bmh-secret-1"
+        bootMACAddress: "c8:4b:d6:9b:dd:d0"
+        bootMode: "UEFISecureBoot"  
+        # Use UEFISecureBoot to enable secure boot for this node
+        # bootMode: "UEFI"
+        nodeLabels:
+          cluster.ocs.openshift.io/openshift-storage: "true"
+        rootDeviceHints:
+          deviceName: "/dev/sda"
+        nodeNetwork:
+          interfaces:
+            - name: "ens4f0np0"
+              macAddress: "14:23:f2:1f:86:40"
+            - name: "ens5f0np0"
+              macAddress: "14:23:f2:1e:ea:50"
+          config:
+            interfaces:
+              - name: bond0
+                type: bond
+                state: up
+                mtu: 9000
+                ipv4:
+                  enabled: false
+                link-aggregation:
+                  mode: 802.3ad
+                  options:
+                    miimon: '100'
+                  port:
+                  - ens4f0np0
+                  - ens5f0np0
+              - name: bond0.2844
+                type: vlan
+                state: up
+                mtu: 9000
+                ipv4:
+                  enabled: true
+                  address:
+                    - ip: 10.119.57.9
+                      prefix-length: 24
+                vlan:
+                  base-iface: bond0
+                  id: 2844
+            dns-resolver:
+              config:
+                server:
+                  - 10.207.52.57
+                  - 10.119.248.13
+            routes:
+              config:
+                - destination: 0.0.0.0/0
+                  next-hop-address: 10.119.57.1 
+                  next-hop-interface: bond0.2284
+      - hostName: "ithfdeocp1lwr02.telcelcloud.dt"
+        role: "worker"
+        bmcAddress: "idrac-virtualmedia+https://10.59.198.228/redfish/v1/Systems/System.Embedded.1"
+        bmcCredentialsName:
+          name: "bmh-secret-2"
+        bootMACAddress: "c8:4b:d6:9b:dd:a6"
+        bootMode: "UEFISecureBoot"  
+        # Use UEFISecureBoot to enable secure boot for this node
+        # bootMode: "UEFI"
+        nodeLabels:
+          cluster.ocs.openshift.io/openshift-storage: "true"
+        rootDeviceHints:
+          deviceName: "/dev/sda"
+        nodeNetwork:
+          interfaces:
+            - name: "ens4f0np0"
+              macAddress: "14:23:f2:1f:89:40"
+            - name: "ens5f0np0"
+              macAddress: "14:23:f2:1e:83:a0"
+          config:
+            interfaces:
+              - name: bond0
+                type: bond
+                state: up
+                mtu: 9000
+                ipv4:
+                  enabled: false
+                link-aggregation:
+                  mode: 802.3ad
+                  options:
+                    miimon: '100'
+                  port:
+                  - ens4f0np0
+                  - ens5f0np0
+              - name: bond0.2844
+                type: vlan
+                state: up
+                mtu: 9000
+                ipv4:
+                  enabled: true
+                  address:
+                    - ip: 10.119.57.10
+                      prefix-length: 24
+                vlan:
+                  base-iface: bond0
+                  id: 2844
+            dns-resolver:
+              config:
+                server:
+                  - 10.207.52.57
+                  - 10.119.248.13
+            routes:
+              config:
+                - destination: 0.0.0.0/0
+                  next-hop-address: 10.119.57.1
+                  next-hop-interface: bond0.2284
+      - hostName: "ithfdeocp1lwr03.telcelcloud.dt"
+        role: "worker"
+        bmcAddress: "idrac-virtualmedia+https://10.59.198.229/redfish/v1/Systems/System.Embedded.1"
+        bmcCredentialsName:
+          name: "bmh-secret-3"
+        bootMACAddress: "c8:4b:d6:9b:ed:52"
+        bootMode: "UEFISecureBoot"  
+        # Use UEFISecureBoot to enable secure boot for this node
+        # bootMode: "UEFI"
+        nodeLabels:
+          cluster.ocs.openshift.io/openshift-storage: "true"
+        rootDeviceHints:
+          deviceName: "/dev/sda"
+        nodeNetwork:
+          interfaces:
+            - name: "ens4f0np0"
+              macAddress: "14:23:f2:1f:4b:60"
+            - name: "ens5f0np0"
+              macAddress: "14:23:f2:1f:4a:30"
+          config:
+            interfaces:
+              - name: bond0
+                type: bond
+                state: up
+                mtu: 9000
+                ipv4:
+                  enabled: false
+                link-aggregation:
+                  mode: 802.3ad
+                  options:
+                    miimon: '100'
+                  port:
+                  - ens4f0np0
+                  - ens5f0np0
+              - name: bond0.2844
+                type: vlan
+                state: up
+                mtu: 9000
+                ipv4:
+                  enabled: true
+                  address:
+                    - ip: 10.119.57.11
+                      prefix-length: 24
+                vlan:
+                  base-iface: bond0
+                  id: 2844
+            dns-resolver:
+              config:
+                server:
+                  - 10.207.52.57
+                  - 10.119.248.13
+            routes:
+              config:
+                - destination: 0.0.0.0/0
+                  next-hop-address: 10.119.57.1
+                  next-hop-interface: bond0.2284
+      - hostName: "ithfdeocp1lwr04.telcelcloud.dt"
+        role: "worker"
+        bmcAddress: "idrac-virtualmedia+https://10.59.198.230/redfish/v1/Systems/System.Embedded.1"
+        bmcCredentialsName:
+          name: "bmh-secret-4"
+        bootMACAddress: "c8:4b:d6:9b:ec:92"
+        bootMode: "UEFISecureBoot"  
+        # Use UEFISecureBoot to enable secure boot for this node
+        # bootMode: "UEFI"
+        nodeLabels:
+          cluster.ocs.openshift.io/openshift-storage: "true"
+        rootDeviceHints:
+          deviceName: "/dev/sda"
+        nodeNetwork:
+          interfaces:
+            - name: "ens4f0np0"
+              macAddress: "14:23:f2:1f:4f:20"
+            - name: "ens5f0np0"
+              macAddress: "14:23:f2:1e:83:50"
+          config:
+            interfaces:
+              - name: bond0
+                type: bond
+                state: up
+                mtu: 9000
+                ipv4:
+                  enabled: false
+                link-aggregation:
+                  mode: 802.3ad
+                  options:
+                    miimon: '100'
+                  port:
+                  - ens4f0np0
+                  - ens5f0np0
+              - name: bond0.2844
+                type: vlan
+                state: up
+                mtu: 9000
+                ipv4:
+                  enabled: true
+                  address:
+                    - ip: 10.119.57.12
+                      prefix-length: 24
+                vlan:
+                  base-iface: bond0
+                  id: 2844
+            dns-resolver:
+              config:
+                server:
+                  - 10.207.52.57
+                  - 10.119.248.13
+            routes:
+              config:
+                - destination: 0.0.0.0/0
+                  next-hop-address: 10.119.57.1
+                  next-hop-interface: bond0.2284
+      - hostName: "ithfdeocp1lwr05.telcelcloud.dt"
+        role: "worker"
+        bmcAddress: "idrac-virtualmedia+https://10.59.198.231/redfish/v1/Systems/System.Embedded.1"
+        bmcCredentialsName:
+          name: "bmh-secret-5"
+        bootMACAddress: "c8:4b:d6:9b:eb:6e"
+        bootMode: "UEFISecureBoot"  
+        # Use UEFISecureBoot to enable secure boot for this node
+        # bootMode: "UEFI"
+        nodeLabels:
+          cluster.ocs.openshift.io/openshift-storage: "true"
+        rootDeviceHints:
+          deviceName: "/dev/sda"
+        nodeNetwork:
+          interfaces:
+            - name: "ens4f0np0"
+              macAddress: "14:23:f2:1e:7b:90"
+            - name: "ens5f0np0"
+              macAddress: "14:23:f2:1f:52:30"
+          config:
+            interfaces:
+              - name: bond0
+                type: bond
+                state: up
+                mtu: 9000
+                ipv4:
+                  enabled: false
+                link-aggregation:
+                  mode: 802.3ad
+                  options:
+                    miimon: '100'
+                  port:
+                  - ens4f0np0
+                  - ens5f0np0
+              - name: bond0.2844
+                type: vlan
+                state: up
+                mtu: 9000
+                ipv4:
+                  enabled: true
+                  address:
+                    - ip: 10.119.57.13
+                      prefix-length: 24
+                vlan:
+                  base-iface: bond0
+                  id: 2844
+            dns-resolver:
+              config:
+                server:
+                  - 10.207.52.57
+                  - 10.119.248.13
+            routes:
+              config:
+                - destination: 0.0.0.0/0
+                  next-hop-address: 10.119.57.1
+                  next-hop-interface: bond0.2284
+      - hostName: "ithfdeocp1lwr06.telcelcloud.dt"
+        role: "worker"
+        bmcAddress: "idrac-virtualmedia+https://10.59.198.232/redfish/v1/Systems/System.Embedded.1"
+        bmcCredentialsName:
+          name: "bmh-secret-6"
+        bootMACAddress: "c8:4b:d6:9b:e7:f0"
+        bootMode: "UEFISecureBoot"  
+        # Use UEFISecureBoot to enable secure boot for this node
+        # bootMode: "UEFI"
+        nodeLabels:
+          cluster.ocs.openshift.io/openshift-storage: "true"
+        rootDeviceHints:
+          deviceName: "/dev/sda"
+        nodeNetwork:
+          interfaces:
+            - name: "ens4f0np0"
+              macAddress: "14:23:f2:1f:8d:40"
+            - name: "ens5f0np0"
+              macAddress: "14:23:f2:1e:84:e0"
+          config:
+            interfaces:
+              - name: bond0
+                type: bond
+                state: up
+                mtu: 9000
+                ipv4:
+                  enabled: false
+                link-aggregation:
+                  mode: 802.3ad
+                  options:
+                    miimon: '100'
+                  port:
+                  - ens4f0np0
+                  - ens5f0np0
+              - name: bond0.2844
+                type: vlan
+                state: up
+                mtu: 9000
+                ipv4:
+                  enabled: true
+                  address:
+                    - ip: 10.119.57.14
+                      prefix-length: 24
+                vlan:
+                  base-iface: bond0
+                  id: 2844
+            dns-resolver:
+              config:
+                server:
+                  - 10.207.52.57
+                  - 10.119.248.13
+            routes:
+              config:
+                - destination: 0.0.0.0/0
+                  next-hop-address: 10.119.57.1
+                  next-hop-interface: bond0.2284
+      - hostName: "ithfdeocp1lwr07.telcelcloud.dt"
+        role: "worker"
+        bmcAddress: "idrac-virtualmedia+https://10.59.198.233/redfish/v1/Systems/System.Embedded.1"
+        bmcCredentialsName:
+          name: "bmh-secret-7"
+        bootMACAddress: "c8:4b:d6:9b:ec:94"
+        bootMode: "UEFISecureBoot"  
+        # Use UEFISecureBoot to enable secure boot for this node
+        # bootMode: "UEFI"
+        nodeLabels:
+          cluster.ocs.openshift.io/openshift-storage: "true"
+        rootDeviceHints:
+          deviceName: "/dev/sda"
+        nodeNetwork:
+          interfaces:
+            - name: "ens4f0np0"
+              macAddress: "14:23:f2:1f:8d:90"
+            - name: "ens5f0np0"
+              macAddress: "14:23:f2:1f:92:50"
+          config:
+            interfaces:
+              - name: bond0
+                type: bond
+                state: up
+                mtu: 9000
+                ipv4:
+                  enabled: false
+                link-aggregation:
+                  mode: 802.3ad
+                  options:
+                    miimon: '100'
+                  port:
+                  - ens4f0np0
+                  - ens5f0np0
+              - name: bond0.2844
+                type: vlan
+                state: up
+                mtu: 9000
+                ipv4:
+                  enabled: true
+                  address:
+                    - ip: 10.119.57.15
+                      prefix-length: 24
+                vlan:
+                  base-iface: bond0
+                  id: 2844
+            dns-resolver:
+              config:
+                server:
+                  - 10.207.52.57
+                  - 10.119.248.13
+            routes:
+              config:
+                - destination: 0.0.0.0/0
+                  next-hop-address: 10.119.57.1
+                  next-hop-interface: bond0.2284
+      - hostName: "ithfdeocp1lwr08.telcelcloud.dt"
+        role: "worker"
+        bmcAddress: "idrac-virtualmedia+https://10.59.198.234/redfish/v1/Systems/System.Embedded.1"
+        bmcCredentialsName:
+          name: "bmh-secret-8"
+        bootMACAddress: "c8:4b:d6:9b:e0:60"
+        bootMode: "UEFISecureBoot"  
+        # Use UEFISecureBoot to enable secure boot for this node
+        # bootMode: "UEFI"
+        nodeLabels:
+          cluster.ocs.openshift.io/openshift-storage: "true"
+        rootDeviceHints:
+          deviceName: "/dev/sda"
+        nodeNetwork:
+          interfaces:
+            - name: "ens4f0np0"
+              macAddress: "14:23:f2:1f:c3:a0"
+            - name: "ens5f0np0"
+              macAddress: "14:23:f2:1e:e7:60"
+          config:
+            interfaces:
+              - name: bond0
+                type: bond
+                state: up
+                mtu: 9000
+                ipv4:
+                  enabled: false
+                link-aggregation:
+                  mode: 802.3ad
+                  options:
+                    miimon: '100'
+                  port:
+                  - ens4f0np0
+                  - ens5f0np0
+              - name: bond0.2844
+                type: vlan
+                state: up
+                mtu: 9000
+                ipv4:
+                  enabled: true
+                  address:
+                    - ip: 10.119.57.16
+                      prefix-length: 24
+                vlan:
+                  base-iface: bond0
+                  id: 2844
+            dns-resolver:
+              config:
+                server:
+                  - 10.207.52.57
+                  - 10.119.248.13
+            routes:
+              config:
+                - destination: 0.0.0.0/0
+                  next-hop-address: 10.119.57.1
+                  next-hop-interface: bond0.2284
+      - hostName: "ithfdeocp1lwr09.telcelcloud.dt"
+        role: "worker"
+        bmcAddress: "idrac-virtualmedia+https://10.59.198.235/redfish/v1/Systems/System.Embedded.1"
+        bmcCredentialsName:
+          name: "bmh-secret-9"
+        bootMACAddress: "c8:4b:d6:9b:e3:f2"
+        bootMode: "UEFISecureBoot"  
+        # Use UEFISecureBoot to enable secure boot for this node
+        # bootMode: "UEFI"
+        nodeLabels:
+          cluster.ocs.openshift.io/openshift-storage: "true"
+        rootDeviceHints:
+          deviceName: "/dev/sda"
+        nodeNetwork:
+          interfaces:
+            - name: "ens4f0np0"
+              macAddress: "14:23:f2:1e:97:d0"
+            - name: "ens5f0np0"
+              macAddress: "14:23:f2:1f:89:b0"
+          config:
+            interfaces:
+              - name: bond0
+                type: bond
+                state: up
+                mtu: 9000
+                ipv4:
+                  enabled: false
+                link-aggregation:
+                  mode: 802.3ad
+                  options:
+                    miimon: '100'
+                  port:
+                  - ens4f0np0
+                  - ens5f0np0
+              - name: bond0.2844
+                type: vlan
+                state: up
+                mtu: 9000
+                ipv4:
+                  enabled: true
+                  address:
+                    - ip: 10.119.57.17
+                      prefix-length: 24
+                vlan:
+                  base-iface: bond0
+                  id: 2844
+            dns-resolver:
+              config:
+                server:
+                  - 10.207.52.57
+                  - 10.119.248.13
+            routes:
+              config:
+                - destination: 0.0.0.0/0
+                  next-hop-address: 10.119.57.1
+                  next-hop-interface: bond0.2284
+      - hostName: "ithfdeocp1lwr10.telcelcloud.dt"
+        role: "worker"
+        bmcAddress: "idrac-virtualmedia+https://10.59.198.236/redfish/v1/Systems/System.Embedded.1"
+        bmcCredentialsName:
+          name: "bmh-secret-10"
+        bootMACAddress: "c8:4b:d6:9b:e7:da"
+        bootMode: "UEFISecureBoot"  
+        nodeLabels:
+          cluster.ocs.openshift.io/openshift-storage: "true"
+        rootDeviceHints:
+          deviceName: "/dev/sda"
+        nodeNetwork:
+          interfaces:
+            - name: "ens4f0np0"
+              macAddress: "14:23:f2:1f:4d:60"
+            - name: "ens5f0np0"
+              macAddress: "14:23:f2:1e:94:a0"
+          config:
+            interfaces:
+              - name: bond0
+                type: bond
+                state: up
+                mtu: 9000
+                ipv4:
+                  enabled: false
+                link-aggregation:
+                  mode: 802.3ad
+                  options:
+                    miimon: '100'
+                  port:
+                  - ens4f0np0
+                  - ens5f0np0
+              - name: bond0.2844
+                type: vlan
+                state: up
+                mtu: 9000
+                ipv4:
+                  enabled: true
+                  address:
+                    - ip: 10.119.57.18
+                      prefix-length: 24
+                vlan:
+                  base-iface: bond0
+                  id: 2844
+            dns-resolver:
+              config:
+                server:
+                  - 10.207.52.57
+                  - 10.119.248.13
+            routes:
+              config:
+                - destination: 0.0.0.0/0
+                  next-hop-address: 10.119.57.1
+                  next-hop-interface: bond0.2284
+      - hostName: "ithfdeocp1lwr11.telcelcloud.dt"
+        role: "worker"
+        bmcAddress: "idrac-virtualmedia+https://10.59.198.237/redfish/v1/Systems/System.Embedded.1"
+        bmcCredentialsName:
+          name: "bmh-secret-11"
+        bootMACAddress: "c8:4b:d6:9b:ed:cc"
+        bootMode: "UEFISecureBoot"  
+        nodeLabels:
+          cluster.ocs.openshift.io/openshift-storage: "true"
+        rootDeviceHints:
+          deviceName: "/dev/sda"
+        nodeNetwork:
+          interfaces:
+            - name: "ens4f0np0"
+              macAddress: "14:23:f2:1e:e3:c0"
+            - name: "ens5f0np0"
+              macAddress: "14:23:f2:1f:7c:60"
+          config:
+            interfaces:
+              - name: bond0
+                type: bond
+                state: up
+                mtu: 9000
+                ipv4:
+                  enabled: false
+                link-aggregation:
+                  mode: 802.3ad
+                  options:
+                    miimon: '100'
+                  port:
+                  - ens4f0np0
+                  - ens5f0np0
+              - name: bond0.2844
+                type: vlan
+                state: up
+                mtu: 9000
+                ipv4:
+                  enabled: true
+                  address:
+                    - ip: 10.119.57.19
+                      prefix-length: 24
+                vlan:
+                  base-iface: bond0
+                  id: 2844
+            dns-resolver:
+              config:
+                server:
+                  - 10.207.52.57
+                  - 10.119.248.13
+            routes:
+              config:
+                - destination: 0.0.0.0/0
+                  next-hop-address: 10.119.57.1
+                  next-hop-interface: bond0.2284
+      - hostName: "ithfdeocp1lwr12.telcelcloud.dt"
+        role: "worker"
+        bmcAddress: "idrac-virtualmedia+https://10.59.198.238/redfish/v1/Systems/System.Embedded.1"
+        bmcCredentialsName:
+          name: "bmh-secret-12"
+        bootMACAddress: "c8:4b:d6:9b:ea:1e"
+        bootMode: "UEFISecureBoot"  
+        nodeLabels:
+          cluster.ocs.openshift.io/openshift-storage: "true"
+        rootDeviceHints:
+          deviceName: "/dev/sda"
+        nodeNetwork:
+          interfaces:
+            - name: "ens4f0np0"
+              macAddress: "14:23:f2:1e:f0:d0"
+            - name: "ens5f0np0"
+              macAddress: "14:23:f2:1e:e1:80"
+          config:
+            interfaces:
+              - name: bond0
+                type: bond
+                state: up
+                mtu: 9000
+                ipv4:
+                  enabled: false
+                link-aggregation:
+                  mode: 802.3ad
+                  options:
+                    miimon: '100'
+                  port:
+                  - ens4f0np0
+                  - ens5f0np0
+              - name: bond0.2844
+                type: vlan
+                state: up
+                mtu: 9000
+                ipv4:
+                  enabled: true
+                  address:
+                    - ip: 10.119.57.20
+                      prefix-length: 24
+                vlan:
+                  base-iface: bond0
+                  id: 2844
+            dns-resolver:
+              config:
+                server:
+                  - 10.207.52.57
+                  - 10.119.248.13
+            routes:
+              config:
+                - destination: 0.0.0.0/0
+                  next-hop-address: 10.119.57.1
+                  next-hop-interface: bond0.2284
+      - hostName: "ithfdeocp1lwr13.telcelcloud.dt"
+        role: "worker"
+        bmcAddress: "idrac-virtualmedia+https://10.59.198.239/redfish/v1/Systems/System.Embedded.1"
+        bmcCredentialsName:
+          name: "bmh-secret-13"
+        bootMACAddress: "c8:4b:d6:9b:ec:ac"
+        bootMode: "UEFISecureBoot"  
+        # Use UEFISecureBoot to enable secure boot for this node
+        # bootMode: "UEFI"
+        nodeLabels:
+          cluster.ocs.openshift.io/openshift-storage: "true"
+        rootDeviceHints:
+          deviceName: "/dev/sda"
+        nodeNetwork:
+          interfaces:
+            - name: "ens4f0np0"
+              macAddress: "14:23:f2:1f:4f:e0"
+            - name: "ens5f0np0"
+              macAddress: "14:23:f2:1f:52:f0"
+          config:
+            interfaces:
+              - name: bond0
+                type: bond
+                state: up
+                mtu: 9000
+                ipv4:
+                  enabled: false
+                link-aggregation:
+                  mode: 802.3ad
+                  options:
+                    miimon: '100'
+                  port:
+                  - ens4f0np0
+                  - ens5f0np0
+              - name: bond0.2844
+                type: vlan
+                state: up
+                mtu: 9000
+                ipv4:
+                  enabled: true
+                  address:
+                    - ip: 10.119.57.21
+                      prefix-length: 24
+                vlan:
+                  base-iface: bond0
+                  id: 2844
+            dns-resolver:
+              config:
+                server:
+                  - 10.207.52.57
+                  - 10.119.248.13
+            routes:
+              config:
+                - destination: 0.0.0.0/0
+                  next-hop-address: 10.119.57.1
+                  next-hop-interface: bond0.2284
